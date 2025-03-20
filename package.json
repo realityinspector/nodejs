@@ -18,8 +18,12 @@
     "body-parser": "^1.20.2",
     "method-override": "^3.0.0"
   },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
   "scripts": {
     "start": "node app.js",
+    "dev": "nodemon app.js",
     "migrate": "node db/migrate.js"
   }
 }
