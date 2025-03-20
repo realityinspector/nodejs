@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= page.title %></title>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .edit-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .edit-button:hover {
+            background-color: #0056b3;
+        }
+        #editor {
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        .ql-editor {
+            min-height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <% if (isEditing) { %>
+            <form action="/page/<%= page.slug %>?_method=PUT" method="POST">
+                <input type="text" name="title" value="<%= page.title %>" style="font-size: 24px; margin-bottom: 20px; width: 100%;">
+                <div id="editor"><%- page.content %></div>
+                <input type="hidden" name="content" id="hiddenContent">
+                <button type="submit" class="edit-button">Save Changes</button>
+            </form>
+            <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+            <script>
+                var quill = new Quill('#editor', {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: [
+                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'align': [] }],
+                            ['link', 'image'],
+                            ['clean']
+                        ]
+                    }
+                });
+
+                document.querySelector('form').onsubmit = function() {
+                    document.getElementById('hiddenContent').value = quill.root.innerHTML;
+                };
+            </script>
+        <% } else { %>
+            <h1><%= page.title %></h1>
+            <div class="content"><%- page.content %></div>
+            <a href="/edit/<%= page.slug %>" class="edit-button">Edit Page</a>
+        <% } %>
+    </div>
+</body>
+</html> 
