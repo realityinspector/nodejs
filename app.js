@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
@@ -8,14 +7,8 @@ const methodOverride = require('method-override');
 const sequelize = require('./db/config');
 const Page = require('./db/models/Page');
 
-// Verify required environment variables
-if (!process.env.DATABASE_URL) {
-  console.error('Missing required environment variable: DATABASE_URL');
-  process.exit(1);
-}
-
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // View engine setup
 app.set('view engine', 'ejs');
@@ -27,12 +20,15 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(methodOverride('_method'));
 
-// Session middleware
+// Session middleware using Railway's DATABASE_URL
 app.use(session({
   store: new PgSession({
     conString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false
+    }
   }),
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: process.env.SESSION_SECRET || 'default-secret-key',
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 } // 30 days
@@ -42,6 +38,15 @@ app.use(session({
 app.get('/', async (req, res) => {
   try {
     const page = await Page.findOne({ where: { slug: 'home' } });
+    if (!page) {
+      // Create default home page if it doesn't exist
+      const defaultPage = await Page.create({
+        slug: 'home',
+        title: 'Welcome to our Website',
+        content: '<h1>Welcome</h1><p>This is your homepage. Click edit to modify this content.</p>'
+      });
+      return res.render('page', { page: defaultPage, isEditing: false });
+    }
     res.render('page', { page, isEditing: false });
   } catch (error) {
     console.error('Error loading page:', error);
@@ -81,15 +86,15 @@ app.use((req, res) => {
   res.status(404).render('404');
 });
 
-// Start server
-sequelize.authenticate()
+// Database sync and server start
+sequelize.sync()
   .then(() => {
-    console.log('Database connection established');
+    console.log('Database synced');
     app.listen(PORT, () => {
-      console.log(`Server running at http://localhost:${PORT}/`);
+      console.log(`Server running on port ${PORT}`);
     });
   })
   .catch(err => {
-    console.error('Unable to connect to the database:', err);
+    console.error('Unable to sync database:', err);
     process.exit(1);
   });
